@@ -9,7 +9,10 @@ exports.index = (req, res) => {
   async.parallel(
     {
       book_count(callback) {
-        Book.countDocuments({}, callback); // Pass an empty object as match condition to find all documents of this collection
+        Book.countDocuments({}, function (err, results) {
+          if (err) return "THERE WAS AN ERROR";
+          return callback(null, results);
+        }); // Pass an empty object as match condition to find all documents of this collection
       },
       book_instance_count(callback) {
         BookInstance.countDocuments({}, callback);
