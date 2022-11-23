@@ -5,6 +5,8 @@ const BookInstance = require("../models/bookinstance");
 
 const async = require("async");
 
+const mongoose = require("mongoose");
+
 exports.index = (req, res) => {
   async.parallel(
     {
@@ -53,7 +55,28 @@ exports.book_list = (req, res, next) => {
 
 // Display detail page for a specific book.
 exports.book_detail = (req, res) => {
-  res.send(`NOT IMPLEMENTED: Book detail: ${req.params.id}`);
+  // res.send(`NOT IMPLEMENTED: Book detail: ${req.params.id}`);
+  const bookId = mongoose.Types.ObjectId(req.params.id);
+  async.parallel(
+    {
+      book(callback) {
+        Book.findOne({ _id: bookId })
+          .populate({ path: "author" })
+          .populate({ path: "genre" })
+          .exec(callback);
+      },
+      book_instances(callback) {
+        BookInstance.find({ book: bookId }).exec(callback);
+      },
+    },
+    (err, results) => {
+      res.render("book_detail", {
+        book: results.book,
+        author: results.book.author,
+        book_instance_list: results.book_instances,
+      });
+    }
+  );
 };
 
 // Display book create form on GET.
