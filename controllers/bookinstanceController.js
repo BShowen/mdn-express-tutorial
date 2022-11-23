@@ -1,5 +1,7 @@
 const BookInstance = require("../models/bookinstance");
 
+const mongoose = require("mongoose");
+
 // Display list of all BookInstances.
 exports.bookinstance_list = (req, res, next) => {
   BookInstance.find({}, "imprint status due_back")
@@ -16,7 +18,15 @@ exports.bookinstance_list = (req, res, next) => {
 
 // Display detail page for a specific BookInstance.
 exports.bookinstance_detail = (req, res) => {
-  res.send(`NOT IMPLEMENTED: BookInstance detail: ${req.params.id}`);
+  // res.send(`NOT IMPLEMENTED: BookInstance detail: ${req.params.id}`);
+  const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
+  BookInstance.findOne({ _id: bookInstanceID })
+    .populate({ path: "book", select: "title" })
+    .exec((err, result) => {
+      res.render("bookInstance_detail", {
+        bookInstance: result,
+      });
+    });
 };
 
 // Display BookInstance create form on GET.
