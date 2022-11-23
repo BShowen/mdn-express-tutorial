@@ -1,4 +1,8 @@
 const Author = require("../models/author");
+const Book = require("../models/book");
+const mongoose = require("mongoose");
+
+const async = require("async");
 
 // Display list of all Authors.
 exports.author_list = (req, res) => {
@@ -14,7 +18,24 @@ exports.author_list = (req, res) => {
 
 // Display detail page for specific Author.
 exports.author_detail = (req, res) => {
-  res.send(`NOT IMPLEMENTED: Author detail: ${req.params.id}`);
+  // res.send(`NOT IMPLEMENTED: Author detail: ${req.params.id}`);
+  const authorId = mongoose.Types.ObjectId(req.params.id);
+  async.parallel(
+    {
+      author(callback) {
+        Author.findOne({ _id: req.params.id }).exec(callback);
+      },
+      authors_books(callback) {
+        Book.find({ author: req.params.id }).exec(callback);
+      },
+    },
+    (err, results) => {
+      res.render("author_detail", {
+        author: results.author,
+        authors_books: results.authors_books,
+      });
+    }
+  );
 };
 
 // Display Author create form on Get.
