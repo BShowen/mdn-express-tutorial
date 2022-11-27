@@ -1,0 +1,77 @@
+extends layout 
+
+block content
+
+  h1 #{title}
+
+  form#book-form(method="POST", action="") 
+
+    .form-group 
+      label(for="title") Title: 
+      input.form-control(
+        type="text", 
+        id="title"
+        name="title"
+        required="true", 
+        placeholder="Name of book"
+        value=(book===undefined ? '' : book.title)
+      )
+      
+    .form-group   
+      label(for="author") Author: 
+      select.custom-select#author(
+        type='select', 
+        placeholder='Select author' 
+        name='author' 
+        required='true')
+        for author in author_list 
+          if book
+            option(
+              value=author._id, 
+              selected= book.author._id.toString()===author._id.toString()
+            ) #{author.name}  
+          else
+            option(
+              value=author._id, 
+            ) #{author.name}  
+
+    .form-group   
+      label(for="summary") Summary: 
+      textarea.form-control(
+        rows="2"
+        name="summary", 
+        id="summary"
+        required="true",
+        placeholder="Summary"
+      ) #{book===undefined ? '' : book.summary}
+    
+    .form-group   
+      label(for="isbn") ISBN: 
+      input.form-control(
+        type="text",
+        name="isbn",
+        id="isbn" 
+        required="true",
+        placeholder="ISBN13"
+        value=(book===undefined ? '' : book.isbn)
+      )
+    
+    .form-group   
+      h6 Genre: 
+      for genre in genre_list 
+        .custom-control.custom-checkbox.custom-control-inline
+          input.custom-control-input(
+            type="checkbox", 
+            id=genre.name, 
+            name="genre", 
+            value=genre._id
+            checked=genre.checked
+          )
+          label.custom-control-label(for=genre.name) #{genre.name}
+    
+    button.btn.btn-primary(type=-"submit") Submit 
+  
+  if errors
+    for error in errors 
+      ul 
+        li #{error.msg} 
