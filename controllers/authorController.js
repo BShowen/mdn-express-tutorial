@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 
 const async = require("async");
 
+const { body, validationResult } = require("express-validator");
+
 // Display list of all Authors.
 exports.author_list = (req, res) => {
   Author.find()
@@ -40,13 +42,62 @@ exports.author_detail = (req, res) => {
 
 // Display Author create form on Get.
 exports.author_create_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author create GET");
+  res.render("author_form", {
+    title: "Create Author",
+  });
 };
 
 // Handle Author create on POST.
-exports.author_create_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author create POST");
-};
+exports.author_create_post = [
+  // Validate the first name
+  body("first_name", "First name is required")
+    .trim()
+    .isLength({ max: 100 })
+    .isAlphanumeric()
+    .withMessage("First name has non-alphanumeric characters."),
+  // Validate the family name
+  body("family_name", "Family name is required")
+    .trim()
+    .isLength({ max: 100 })
+    .isAlphanumeric()
+    .withMessage("First name has non-alphanumeric characters."),
+  // Validate the date of birth, if provided
+  body("date_of_birth", "Invalid birth date")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isDate(),
+  body("date_of_birth", "Birth date must be before today")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isBefore(new Date().toString()),
+  // Validate the date of death, if provided
+  body("date_of_death", "Invalid death date")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isDate(),
+  (req, res, next) => {
+    // If author is invalid then re-render form with errors
+    // Otherwise save and redirect to author details page
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/errors messages.
+      return res.render("author_form", {
+        title: "Create Author",
+        author: req.body,
+        errors: errors.array(),
+      });
+    }
+
+    // Data from form is valid.
+    // Create an Author object with escaped and trimmed data.
+    const author = new Author({ ...req.body });
+    author.save((err) => {
+      if (err) return next(err);
+      res.redirect(author.url);
+    });
+  },
+];
 
 // Display Author delete form on GET.
 exports.author_delete_get = (req, res) => {
