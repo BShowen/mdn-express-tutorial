@@ -1,0 +1,23 @@
+extends layout 
+
+block content 
+
+  h1 Author: #{author.name}
+
+  p #{author.dob_formatted} - #{author.dod_formatted}
+
+  if book_list.length 
+    p #[strong Delete the following books before attempting to delete this author.] 
+    
+    div(style='margin-left:20px;margin-top:20px')
+      h4 Books 
+
+      dl
+        each book in book_list
+          dt 
+            a(href= book.url) #{book.title} 
+          dd #{p= book.summary}
+  else 
+    p Are you sure you really want to delete this author? 
+    form(action="", method="POST") 
+      button.btn.btn-primary(type="submit") Delete

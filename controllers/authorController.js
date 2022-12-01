@@ -101,12 +101,57 @@ exports.author_create_post = [
 
 // Display Author delete form on GET.
 exports.author_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author delete GET");
+  const authorId = mongoose.Types.ObjectId(req.params.id);
+
+  async.parallel(
+    {
+      list_books(callback) {
+        return Book.find({ author: authorId }).exec(callback);
+      },
+      author(callback) {
+        return Author.findById(authorId).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+      res.render("author_delete", {
+        author: results.author,
+        book_list: results.list_books,
+      });
+      return;
+    }
+  );
 };
 
 // Handle Author delete on POST.
 exports.author_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author delete POST");
+  const authorId = mongoose.Types.ObjectId(req.params.id);
+
+  async.parallel(
+    {
+      list_books(callback) {
+        return Book.find({ author: authorId }).exec(callback);
+      },
+      author(callback) {
+        return Author.findById(authorId).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      if (results.list_books.length) {
+        // This author has books. Render the author_delete page.
+        return res.render("author_delete", {
+          author: results.author,
+          book_list: results.list_books,
+        });
+      }
+
+      Author.deleteOne({ _id: authorId }).exec((err, result) => {
+        return res.redirect("/catalog/authors");
+      });
+    }
+  );
 };
 
 // Display Author update form on GET.
