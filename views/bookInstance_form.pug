@@ -1,0 +1,64 @@
+extends layout 
+
+block content 
+
+  h1 #{title}
+
+  form(action="", method="POST", for) 
+
+      .form-group 
+        label(for="book_title") Book:
+        select.form-control(
+          id="book_title"
+          name="book", 
+          required="true", 
+        ) 
+          each book in book_list  
+            option(
+              value=book._id.toString(), 
+              selected= book.isSelected===true
+            ) #{book.title}
+      
+      .form-group 
+        label(for="imprint") Imprint:
+        input.form-control(
+          type="text",
+          required="true", 
+          name="imprint"
+          id="imprint"
+          value= bookInstance===undefined ? "" : bookInstance.imprint
+        )
+      
+      .form-group 
+        label(for="due_back") Date when book available:
+        input.form-control(
+          type="date",
+          required="true", 
+          name="due_back"
+          id="due_back"
+          value= bookInstance===undefined ? "" : bookInstance.due_back
+        )
+    
+      .form-group 
+        label(for="status") Status:
+        select.form-control(
+          id="status", 
+          name="status", 
+          required="true"
+        )
+          - var options = ["Loaned", "Available", "Maintenance", "Reserved"]
+          each tag in options
+            option(
+              value=tag, 
+              selected= bookInstance===undefined ? false : bookInstance.status===tag
+            ) #{tag}
+
+      button.btn.btn-primary(
+        type="submit"
+      ) Submit
+  
+  if errors 
+    ul 
+    for error in errors 
+      li #{error.msg}
+      
