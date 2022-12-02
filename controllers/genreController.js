@@ -25,7 +25,7 @@ exports.genre_detail = (req, res, next) => {
   async.parallel(
     {
       genre(callback) {
-        Genre.findOne({ _id: id }, "-_id name").exec(callback);
+        Genre.findById(id).exec(callback);
       },
       genre_books(callback) {
         Book.find({ genre: id }, "title summary").exec(callback);
@@ -44,7 +44,7 @@ exports.genre_detail = (req, res, next) => {
 
       // Successful.
       res.render("genre_detail", {
-        genre: results.genre.name,
+        genre: results.genre,
         genre_books: results.genre_books,
       });
     }
@@ -105,13 +105,66 @@ exports.genre_create_post = [
 ];
 
 // Display Genre delete form on GET.
-exports.genre_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Genre delete GET");
+exports.genre_delete_get = (req, res, next) => {
+  const genreId = mongoose.Types.ObjectId(req.params.id);
+  async.parallel(
+    {
+      genre(callback) {
+        Genre.findById(genreId).exec(callback);
+      },
+      genre_books(callback) {
+        Book.find({ genre: genreId }, "title summary").exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      if (results.genre === null) {
+        // No results for this genre.
+        const err = new Error("Genre not found");
+        err.status = 400;
+        return next(err);
+      }
+
+      // Successful.
+      res.render("genre_detail", {
+        genre: results.genre,
+        genre_books: results.genre_books,
+        confirmDelete: true,
+      });
+    }
+  );
 };
 
 // Handle Genre delete on POST.
-exports.genre_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Genre delete POST");
+exports.genre_delete_post = (req, res, next) => {
+  const genreId = mongoose.Types.ObjectId(req.params.id);
+  async.parallel(
+    {
+      genre(callback) {
+        return Genre.findById(genreId).exec(callback);
+      },
+      genre_books(callback) {
+        return Book.find({ genre: genreId }).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      if (results.genre_books.length > 0) {
+        return render("genre_detail", {
+          genre: results.genre,
+          genre_books: results.genre_books,
+          confirmDelete: true,
+        });
+      }
+
+      results.genre.remove((err) => {
+        if (err) return next(err);
+        return res.redirect("/catalog/genres");
+      });
+    }
+  );
 };
 
 // Display Genre update form on GET.
