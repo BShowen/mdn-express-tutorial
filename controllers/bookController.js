@@ -162,12 +162,61 @@ exports.book_create_post = [
 
 // Display book delete form on GET.
 exports.book_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Book delete GET");
+  const bookId = mongoose.Types.ObjectId(req.params.id);
+
+  // Get the book and any instances of the book
+  async.parallel(
+    {
+      book(callback) {
+        return Book.findById(bookId).exec(callback);
+      },
+      list_bookInstances(callback) {
+        return BookInstance.find({ book: bookId }).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+      // Render the book delete view.
+      return res.render("book_delete", {
+        book: results.book,
+        book_instance_list: results.list_bookInstances,
+      });
+    }
+  );
 };
 
 // Handle book delete on POST.
 exports.book_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Book delete POST");
+  const bookId = mongoose.Types.ObjectId(req.params.id);
+  async.parallel(
+    {
+      book(callback) {
+        return Book.findById(bookId).exec(callback);
+      },
+      list_bookInstances(callback) {
+        return BookInstance.find({ book: bookId }).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      if (results.list_bookInstances.length) {
+        // Cannot delete this book. It has book instances.
+        // Render the book delete view.
+        return res.render("book_delete", {
+          book: results.book,
+          book_instance_list: results.list_bookInstances,
+        });
+      }
+
+      // Delete this book and redirect to book list page
+      Book.findByIdAndDelete(bookId).exec((err) => {
+        if (err) return next(err);
+        // Redirect to home page
+        res.redirect("/catalog/books");
+      });
+    }
+  );
 };
 
 // Display book update form on GET.
