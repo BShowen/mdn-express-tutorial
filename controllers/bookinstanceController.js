@@ -86,13 +86,27 @@ exports.bookinstance_create_post = [
 ];
 
 // Display BookInstance delete form on GET.
-exports.bookinstance_delete_get = (req, res) => {
-  res.send(`NOT IMPLEMENTED: BookInstance delete GET --> ${req.params.id}`);
+exports.bookinstance_delete_get = (req, res, next) => {
+  const bookInstanceId = mongoose.Types.ObjectId(req.params.id);
+  BookInstance.findById(bookInstanceId)
+    .populate({ path: "book", select: "title" })
+    .exec((err, bookInstance) => {
+      if (err) return next(err);
+      res.render("bookInstance_detail", {
+        bookInstance: bookInstance,
+        confirmDelete: true,
+      });
+    });
 };
 
 // Handle BookInstance delete on POST.
-exports.bookinstance_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance delete POST");
+exports.bookinstance_delete_post = (req, res, next) => {
+  const bookInstanceId = mongoose.Types.ObjectId(req.params.id);
+  BookInstance.findByIdAndDelete(bookInstanceId).exec((err) => {
+    if (err) return next(err);
+
+    res.redirect("/catalog/bookinstances");
+  });
 };
 
 // Display BookInstance update form on GET.
