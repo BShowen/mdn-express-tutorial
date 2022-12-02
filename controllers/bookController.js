@@ -121,34 +121,34 @@ exports.book_create_post = [
         } else {
           req.body.genre = [req.body.genre || []];
         }
-      },
-        async.parallel(
-          {
-            list_authors(callback) {
-              Author.find({}, "first_name family_name").exec(callback);
-            },
-            list_genres(callback) {
-              Genre.find({}, "name").exec(callback);
-            },
+      };
+      async.parallel(
+        {
+          list_authors(callback) {
+            Author.find({}, "first_name family_name").exec(callback);
           },
-          (err, results) => {
-            if (err) return next(err);
+          list_genres(callback) {
+            Genre.find({}, "name").exec(callback);
+          },
+        },
+        (err, results) => {
+          if (err) return next(err);
 
-            for (const genre of results.list_genres) {
-              if (book.genre.includes(genre._id)) {
-                genre.checked = true;
-              }
+          for (const genre of results.list_genres) {
+            if (book.genre.includes(genre._id)) {
+              genre.checked = true;
             }
-
-            return res.render("book_form", {
-              title: "Create Book",
-              author_list: results.list_authors,
-              genre_list: results.list_genres,
-              errors: errors.array(),
-              book: book,
-            });
           }
-        );
+
+          return res.render("book_form", {
+            title: "Create Book",
+            author_list: results.list_authors,
+            genre_list: results.list_genres,
+            errors: errors.array(),
+            book: book,
+          });
+        }
+      );
       return;
     }
 
@@ -172,10 +172,94 @@ exports.book_delete_post = (req, res) => {
 
 // Display book update form on GET.
 exports.book_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Book update GET");
+  const bookId = mongoose.Types.ObjectId(req.params.id);
+  // Get the book data from the DB
+  async.parallel(
+    {
+      list_authors(callback) {
+        return Author.find({}).exec(callback);
+      },
+      list_genres(callback) {
+        return Genre.find({}).exec(callback);
+      },
+      book(callback) {
+        return Book.findById(bookId).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      for (const genre of results.list_genres) {
+        if (results.book.genre.includes(genre._id)) {
+          genre.checked = true;
+        }
+      }
+
+      return res.render("book_form", {
+        title: "Update Book",
+        author_list: results.list_authors,
+        genre_list: results.list_genres,
+        book: results.book,
+      });
+    }
+  );
 };
 
 // Handle book update on POST.
-exports.book_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Book update POST");
-};
+exports.book_update_post = [
+  body("title", "Title is required").trim().isLength({ min: 1 }),
+  body("summary", "Summary is required").trim().isLength({ min: 1 }),
+  body("author", "Author is required").trim().isLength({ min: 1 }),
+  body("isbn", "ISBN is required").trim().isLength({ min: 1 }),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    const bookId = mongoose.Types.ObjectId(req.params.id);
+    const book = new Book({ ...req.body, _id: bookId });
+
+    if (!errors.isEmpty()) {
+      (req, res, next) => {
+        if (Array.isArray(req.body.genre)) {
+          next();
+        } else {
+          req.body.genre = [req.body.genre || []];
+        }
+      };
+      async.parallel(
+        {
+          list_authors(callback) {
+            return Author.find({}).exec(callback);
+          },
+          list_genres(callback) {
+            return Genre.find({}).exec(callback);
+          },
+        },
+        (err, results) => {
+          if (err) return next(err);
+
+          for (const genre of results.list_genres) {
+            if (book.genre.includes(genre._id)) {
+              genre.checked = true;
+            }
+          }
+
+          return res.render("book_form", {
+            title: "Update Book",
+            author_list: results.list_authors,
+            genre_list: results.list_genres,
+            errors: errors.array(),
+            book: book,
+          });
+        }
+      );
+      return;
+    }
+    // No errors, so update the book.
+
+    Book.findOneAndUpdate({ _id: bookId }, book).exec((err, book) => {
+      if (err) return next(err); //Book not found in DB
+
+      // Update book
+      return res.redirect(book.url);
+    });
+  },
+];
