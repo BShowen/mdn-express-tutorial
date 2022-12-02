@@ -18,6 +18,12 @@ block content
       if index < book.genre.length - 1
         | , 
   
+  p 
+      a(href=book.url + '/update') Update Book 
+    
+  p 
+    a(href=book.url + '/delete') Delete Book 
+    
   div(style='margin-left:20px;margin-top:20px')
     h4 Copies
     hr
@@ -40,12 +46,9 @@ block content
       p #[strong Id:] 
         a(href=bookInstance.url) #{bookInstance._id}
      
-      if index < book_instance_list.length - 1
+      if index <= book_instance_list.length - 1
         hr
     
     else  
       p There are no copies of this book in the library.
-
-    p 
-      a(href=book.url + '/update') Update Book 
   
