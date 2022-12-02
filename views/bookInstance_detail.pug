@@ -7,7 +7,7 @@ block content
     p #[strong Title:] 
       a(href= bookInstance.book.url) #{bookInstance.book.title} 
     
-    p #[span Imprint:] #{bookInstance.book.title}
+    p #[span Imprint:] #{bookInstance.imprint}
 
     p #[span Status:]  
       if bookInstance.status== 'Available'
