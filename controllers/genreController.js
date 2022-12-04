@@ -168,11 +168,57 @@ exports.genre_delete_post = (req, res, next) => {
 };
 
 // Display Genre update form on GET.
-exports.genre_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Genre update GET");
+exports.genre_update_get = (req, res, next) => {
+  // Get the genre from the DB
+  const genreId = mongoose.Types.ObjectId(req.params.id);
+  Genre.findById(genreId).exec((err, genre) => {
+    if (err) return next(err);
+
+    return res.render("genre_form", {
+      genre: genre,
+    });
+  });
+  // Render the form with the genre object.
 };
 
 // Handle Genre update on POST.
-exports.genre_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Genre update POST");
-};
+exports.genre_update_post = [
+  // Validate genre form data
+  body("name")
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("Genre name is required")
+    .bail()
+    .isLength({ min: 3 })
+    .withMessage("Genre name must be at least 3 characters")
+    .isLength({ max: 100 })
+    .withMessage("Genre name must be less than 100 characters"),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    const genreId = mongoose.Types.ObjectId(req.params.id);
+
+    if (!errors.isEmpty()) {
+      // re-render form with errors
+      Genre.findById(genreId).exec((err, genre) => {
+        if (err) return next(err);
+        // console.log(errors.array());
+        return res.render("genre_form", {
+          genre,
+          errors: errors.array(),
+        });
+      });
+      return;
+    }
+
+    // Update the genre and redirect to genre detail page
+    const genre = new Genre({ ...req.body, _id: genreId });
+    Genre.findByIdAndUpdate(genreId, genre, { new: true }).exec(
+      (err, results) => {
+        // Genre not found in DB.
+        if (err) return next(err);
+
+        return res.redirect(genre.url);
+      }
+    );
+  },
+];
