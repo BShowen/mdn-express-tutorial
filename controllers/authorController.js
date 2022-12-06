@@ -80,32 +80,7 @@ exports.author_create_get = (req, res) => {
 
 // Handle Author create on POST.
 exports.author_create_post = [
-  // Validate the first name
-  body("first_name", "First name is required")
-    .trim()
-    .isLength({ max: 100 })
-    .isAlphanumeric()
-    .withMessage("First name has non-alphanumeric characters."),
-  // Validate the family name
-  body("family_name", "Family name is required")
-    .trim()
-    .isLength({ max: 100 })
-    .isAlphanumeric()
-    .withMessage("First name has non-alphanumeric characters."),
-  // Validate the date of birth, if provided
-  body("date_of_birth", "Invalid birth date")
-    .optional({ checkFalsy: true, nullable: true })
-    .trim()
-    .isDate(),
-  body("date_of_birth", "Birth date must be before today")
-    .optional({ checkFalsy: true, nullable: true })
-    .trim()
-    .isBefore(new Date().toString()),
-  // Validate the date of death, if provided
-  body("date_of_death", "Invalid death date")
-    .optional({ checkFalsy: true, nullable: true })
-    .trim()
-    .isDate(),
+  validateAuthor,
   (req, res, next) => {
     // If author is invalid then re-render form with errors
     // Otherwise save and redirect to author details page
