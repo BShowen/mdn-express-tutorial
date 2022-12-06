@@ -6,6 +6,35 @@ const async = require("async");
 
 const { body, validationResult } = require("express-validator");
 
+const validateAuthor = [
+  // Validate the first name
+  body("first_name", "First name is required")
+    .trim()
+    .isLength({ max: 100 })
+    .isAlphanumeric()
+    .withMessage("First name has non-alphanumeric characters."),
+  // Validate the family name
+  body("family_name", "Family name is required")
+    .trim()
+    .isLength({ max: 100 })
+    .isAlphanumeric()
+    .withMessage("Family name has non-alphanumeric characters."),
+  // Validate the date of birth, if provided
+  body("date_of_birth", "Invalid birth date")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isDate(),
+  body("date_of_birth", "Birth date must be before today")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isBefore(new Date().toString()),
+  // Validate the date of death, if provided
+  body("date_of_death", "Invalid death date")
+    .optional({ checkFalsy: true, nullable: true })
+    .trim()
+    .isDate(),
+];
+
 // Display list of all Authors.
 exports.author_list = (req, res) => {
   Author.find()
@@ -155,11 +184,49 @@ exports.author_delete_post = (req, res) => {
 };
 
 // Display Author update form on GET.
-exports.author_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author update GET");
+exports.author_update_get = (req, res, next) => {
+  const authorId = mongoose.Types.ObjectId(req.params.id);
+
+  // Get author from DB
+  Author.findById(authorId).exec((err, author) => {
+    // Author not found in DB.
+    if (err) return next(err);
+
+    // Render author form with author object
+    return res.render("author_form", {
+      title: "Update Author",
+      author: author,
+    });
+  });
 };
 
 // Handle Author update on POST.
-exports.author_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author update POST");
-};
+exports.author_update_post = [
+  // validate form params.
+  validateAuthor,
+  (req, res, next) => {
+    console.log(req.body);
+    // Create a new author instance.
+    const authorId = mongoose.Types.ObjectId(req.params.id);
+    const author = new Author({ ...req.body, _id: authorId });
+
+    // Re render form if there are errors.
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // Render for with author object and error object.
+      return res.render("author_form", {
+        title: "Update Author",
+        author: author,
+        errors: errors.array(),
+      });
+    }
+
+    // Find author in the DB and update with new instance.
+    Author.findByIdAndUpdate(authorId, author).exec((err, author) => {
+      // Error updating the author.
+      if (err) return next(err);
+
+      return res.redirect(author.url);
+    });
+  },
+];

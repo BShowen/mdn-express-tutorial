@@ -6,6 +6,16 @@ block content
 
   p #{author.dob_formatted} - #{author.dod_formatted}
 
+  .d-flex.flex-row
+    .p-1
+      p
+          a(href=author.url+'/delete') Delete Author 
+    .p-1
+      p 
+        a(href=author.url + '/update') Update Author
+  
+  hr
+
   div(style='margin-left:20px;margin-top:20px')
     h4 Books 
 
@@ -17,6 +27,4 @@ block content
       else 
         p This author has no books
   
-  hr
-  p
-    a(href=author.url+'/delete') Delete Author 
+  

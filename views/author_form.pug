@@ -30,7 +30,7 @@ block content
       input#date_of_birth.form-control(
         type="date", 
         name="date_of_birth", 
-        value=(author===undefined ? '' : author.date_of_birth)
+        value=(author===undefined ? '' : author.dob_ISO_date)
       )
 
     .form-group
@@ -38,7 +38,7 @@ block content
       input#date_of_death.form-control(
         type="date", 
         name="date_of_death", 
-        value=(author===undefined ? '' : author.date_of_death)
+        value=(author===undefined ? '' : author.dod_ISO_date)
       )
 
     button.btn.btn-primary(type="submit" for="author_form") Submit
