@@ -10,13 +10,15 @@ const validateAuthor = [
   // Validate the first name
   body("first_name", "First name is required")
     .trim()
-    .isLength({ max: 100 })
+    .isLength({ min: 1, max: 100 })
+    .bail()
     .isAlphanumeric()
     .withMessage("First name has non-alphanumeric characters."),
   // Validate the family name
   body("family_name", "Family name is required")
     .trim()
-    .isLength({ max: 100 })
+    .isLength({ min: 1, max: 100 })
+    .bail()
     .isAlphanumeric()
     .withMessage("Family name has non-alphanumeric characters."),
   // Validate the date of birth, if provided
