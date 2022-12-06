@@ -7,8 +7,8 @@ const { DateTime } = require("luxon");
 const AuthorSchema = new Schema({
   first_name: { type: String, required: true, maxLength: 100 },
   family_name: { type: String, required: true, maxLength: 100 },
-  date_of_birth: { type: Date },
-  date_of_death: { type: Date },
+  date_of_birth: { type: String },
+  date_of_death: { type: String },
 });
 
 // Virtual for author's full name
@@ -33,26 +33,23 @@ AuthorSchema.virtual("url").get(function () {
 
 AuthorSchema.virtual("dob_formatted").get(function () {
   if (!this.date_of_birth) return "";
-  return DateTime.fromJSDate(this.date_of_birth).toLocaleString(
-    DateTime.DATE_MED
-  );
+  console.log({ name: this.name, dob: this.date_of_birth });
+  return DateTime.fromISO(this.date_of_birth).toLocaleString(DateTime.DATE_MED);
 });
 
 AuthorSchema.virtual("dod_formatted").get(function () {
   if (!this.date_of_death) return "";
-  return DateTime.fromJSDate(this.date_of_death).toLocaleString(
-    DateTime.DATE_MED
-  );
+  return DateTime.fromISO(this.date_of_death).toLocaleString(DateTime.DATE_MED);
 });
 
 AuthorSchema.virtual("dob_ISO_date").get(function () {
   if (!this.date_of_birth) return "";
-  return DateTime.fromJSDate(this.date_of_birth).toISODate();
+  return DateTime.fromISO(this.date_of_birth).toISODate();
 });
 
 AuthorSchema.virtual("dod_ISO_date").get(function () {
   if (!this.date_of_death) return "";
-  return DateTime.fromJSDate(this.date_of_death).toISODate();
+  return DateTime.fromISO(this.date_of_death).toISODate();
 });
 
 // Export model
