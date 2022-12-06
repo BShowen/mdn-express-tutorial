@@ -82,22 +82,23 @@ exports.author_create_get = (req, res) => {
 exports.author_create_post = [
   validateAuthor,
   (req, res, next) => {
+    // Create an Author object with escaped and trimmed data.
+    const author = new Author({ ...req.body });
+
     // If author is invalid then re-render form with errors
     // Otherwise save and redirect to author details page
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/errors messages.
+      console.log(req.body);
       return res.render("author_form", {
         title: "Create Author",
-        author: req.body,
+        author: author,
         errors: errors.array(),
       });
     }
 
     // Data from form is valid.
-    // Create an Author object with escaped and trimmed data.
-    const author = new Author({ ...req.body });
     author.save((err) => {
       if (err) return next(err);
       res.redirect(author.url);
