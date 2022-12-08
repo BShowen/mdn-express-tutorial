@@ -5,6 +5,19 @@ const mongoose = require("mongoose");
 
 const { body, validationResult } = require("express-validator");
 
+const async = require("async");
+
+const validateBookInstanceForm = [
+  body("book", "Book is required").trim().isLength({ min: 1 }),
+  body("imprint", "Imprint is required").trim().isLength({ min: 1 }),
+  body("status", "Status is required").trim().isLength({ min: 1 }),
+  body("due_back", "Date is required")
+    .isISO8601()
+    .isDate()
+    .isAfter(new Date().toString())
+    .withMessage("Date must be after today"),
+];
+
 // Display list of all BookInstances.
 exports.bookinstance_list = (req, res, next) => {
   BookInstance.find({}, "imprint status due_back")
@@ -70,7 +83,7 @@ exports.bookinstance_create_post = [
 
         return res.render("bookInstance_form", {
           title: "Create BookInstance",
-          bookInstance: req.body,
+          bookInstance: bookinstance,
           book_list: list_books,
           errors: errors.array(),
         });
@@ -110,11 +123,82 @@ exports.bookinstance_delete_post = (req, res, next) => {
 };
 
 // Display BookInstance update form on GET.
-exports.bookinstance_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance update GET");
+exports.bookinstance_update_get = (req, res, next) => {
+  const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
+
+  async.parallel(
+    {
+      bookInstance(callback) {
+        // Get the single book instance.
+        return BookInstance.findById(bookInstanceID)
+          .populate("book")
+          .exec(callback);
+      },
+      list_books(callback) {
+        // Get a list of all the books.
+        return Book.find({}).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+
+      // Set the selected book
+      results.list_books.some((book) => {
+        if (book._id.toString() === results.bookInstance.book._id.toString()) {
+          book.isSelected = true;
+          return true;
+        }
+      });
+
+      // Render bookInstance_form
+      return res.render("bookInstance_form", {
+        title: "Update BookInstance",
+        bookInstance: results.bookInstance,
+        book_list: results.list_books,
+      });
+    }
+  );
 };
 
 // Handle bookinstance update on POST.
-exports.bookinstance_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance update POST");
-};
+exports.bookinstance_update_post = [
+  validateBookInstanceForm,
+  (req, res, next) => {
+    const errors = validationResult(req);
+    const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
+    const bookinstance = new BookInstance({
+      ...req.body,
+      _id: bookInstanceID,
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors, re-render the form with errors
+
+      return Book.find({}).exec((err, books) => {
+        if (err) return next(err); //no books found.
+
+        // Set the selected book
+        books.some((book) => {
+          if (book._id.toString() === bookinstance.book._id.toString()) {
+            book.isSelected = true;
+            return true;
+          }
+        });
+
+        return res.render("bookInstance_form", {
+          title: "Update BookInstance",
+          bookInstance: bookinstance,
+          book_list: books,
+          errors: errors.array(),
+        });
+      });
+    }
+
+    // No errors, update the bookInstance and redirect to the bookInstance
+    BookInstance.findByIdAndUpdate(bookInstanceID, bookinstance).exec((err) => {
+      if (err) return next(err); //There was an error in updating.
+
+      return res.redirect(bookinstance.url);
+    });
+  },
+];
