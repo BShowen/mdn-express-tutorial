@@ -19,93 +19,87 @@ const validateBookInstanceForm = [
 ];
 
 // Display list of all BookInstances.
-exports.bookinstance_list = (req, res, next) => {
+exports.bookInstanceList = (req, res, next) => {
   BookInstance.find({}, "imprint status due_back")
-    //"populate the Book reference. Get the title and exclude the -_id field"
+    //"populate the Book reference. Get the title"
     .populate({ path: "book", populate: "title" })
-    .exec(function (err, list_bookinstances, next) {
+    .exec(function (err, listBookInstances, next) {
       if (err) return next(err);
-      res.render("bookinstance_list", {
+      res.render("book_instance_list", {
         title: "Book Instance List",
-        bookinstance_list: list_bookinstances,
+        bookInstanceList: listBookInstances,
       });
     });
 };
 
 // Display detail page for a specific BookInstance.
-exports.bookinstance_detail = (req, res) => {
-  // res.send(`NOT IMPLEMENTED: BookInstance detail: ${req.params.id}`);
+exports.bookInstanceDetail = (req, res) => {
   const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
   BookInstance.findOne({ _id: bookInstanceID })
     .populate({ path: "book", select: "title" })
     .exec((err, result) => {
-      res.render("bookInstance_detail", {
+      if (err) return next(err); //No book instance found.
+      return res.render("book_instance_detail", {
         bookInstance: result,
       });
     });
 };
 
 // Display BookInstance create form on GET.
-exports.bookinstance_create_get = (req, res) => {
+exports.bookInstanceCreateGet = (req, res) => {
   Book.find({}).exec((err, list_books) => {
-    res.render("bookInstance_form", {
-      title: "Create BookInstance",
+    if (err) return next(err); //No book found
+    return res.render("book_instance_form", {
+      title: "Create Book Instance",
       book_list: list_books,
     });
   });
 };
 
 // Handle BookInstance create on POST.
-exports.bookinstance_create_post = [
-  body("book", "Book is required").trim().isLength({ min: 1 }),
-  body("imprint", "Imprint is required").trim().isLength({ min: 1 }),
-  body("status", "Status is required").trim().isLength({ min: 1 }),
-  body("due_back", "Date is required")
-    .isISO8601()
-    .isDate()
-    .isAfter(new Date().toString())
-    .withMessage("Date must be after today"),
+exports.bookInstanceCreatePost = [
+  validateBookInstanceForm,
   (req, res, next) => {
     const errors = validationResult(req);
-    const bookinstance = new BookInstance({ ...req.body });
+    const bookInstance = new BookInstance({ ...req.body });
 
     if (!errors.isEmpty()) {
       // There are errors. Rerender the form with sanitized values
-      Book.find({}).exec((err, list_books) => {
+      return Book.find({}).exec((err, list_books) => {
         if (err) return next(err);
 
         // Set the selected book to the previously selected book
-        list_books.forEach((book) => {
-          if (book._id.toString() === bookinstance.book.toString()) {
+        list_books.some((book) => {
+          if (book._id.toString() === bookInstance.book.toString()) {
             book.isSelected = true;
+            return true;
           }
         });
 
-        return res.render("bookInstance_form", {
-          title: "Create BookInstance",
-          bookInstance: bookinstance,
+        return res.render("book_instance_form", {
+          title: "Create Book Instance",
+          bookInstance: bookInstance,
           book_list: list_books,
           errors: errors.array(),
         });
       });
-      return;
     }
 
-    bookinstance.save((err) => {
+    bookInstance.save((err) => {
       if (err) return next(err);
-      res.redirect(bookinstance.url);
+      return res.redirect(bookInstance.url);
     });
   },
 ];
 
 // Display BookInstance delete form on GET.
-exports.bookinstance_delete_get = (req, res, next) => {
+exports.bookInstanceDeleteGet = (req, res, next) => {
   const bookInstanceId = mongoose.Types.ObjectId(req.params.id);
   BookInstance.findById(bookInstanceId)
     .populate({ path: "book", select: "title" })
     .exec((err, bookInstance) => {
       if (err) return next(err);
-      res.render("bookInstance_detail", {
+      return res.render("book_instance_detail", {
         bookInstance: bookInstance,
         confirmDelete: true,
       });
@@ -113,17 +107,17 @@ exports.bookinstance_delete_get = (req, res, next) => {
 };
 
 // Handle BookInstance delete on POST.
-exports.bookinstance_delete_post = (req, res, next) => {
+exports.bookInstanceDeletePost = (req, res, next) => {
   const bookInstanceId = mongoose.Types.ObjectId(req.params.id);
-  BookInstance.findByIdAndDelete(bookInstanceId).exec((err) => {
+  return BookInstance.findByIdAndDelete(bookInstanceId).exec((err) => {
     if (err) return next(err);
 
-    res.redirect("/catalog/bookinstances");
+    return res.redirect("/catalog/bookinstances");
   });
 };
 
 // Display BookInstance update form on GET.
-exports.bookinstance_update_get = (req, res, next) => {
+exports.bookInstanceUpdateGet = (req, res, next) => {
   const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
 
   async.parallel(
@@ -151,8 +145,8 @@ exports.bookinstance_update_get = (req, res, next) => {
       });
 
       // Render bookInstance_form
-      return res.render("bookInstance_form", {
-        title: "Update BookInstance",
+      return res.render("book_instance_form", {
+        title: "Update Book Instance",
         bookInstance: results.bookInstance,
         book_list: results.list_books,
       });
@@ -160,13 +154,13 @@ exports.bookinstance_update_get = (req, res, next) => {
   );
 };
 
-// Handle bookinstance update on POST.
-exports.bookinstance_update_post = [
+// Handle bookInstance update on POST.
+exports.bookInstanceUpdatePost = [
   validateBookInstanceForm,
   (req, res, next) => {
     const errors = validationResult(req);
     const bookInstanceID = mongoose.Types.ObjectId(req.params.id);
-    const bookinstance = new BookInstance({
+    const bookInstance = new BookInstance({
       ...req.body,
       _id: bookInstanceID,
     });
@@ -179,15 +173,15 @@ exports.bookinstance_update_post = [
 
         // Set the selected book
         books.some((book) => {
-          if (book._id.toString() === bookinstance.book._id.toString()) {
+          if (book._id.toString() === bookInstance.book._id.toString()) {
             book.isSelected = true;
             return true;
           }
         });
 
-        return res.render("bookInstance_form", {
-          title: "Update BookInstance",
-          bookInstance: bookinstance,
+        return res.render("book_instance_form", {
+          title: "Update Book Instance",
+          bookInstance: bookInstance,
           book_list: books,
           errors: errors.array(),
         });
@@ -195,10 +189,10 @@ exports.bookinstance_update_post = [
     }
 
     // No errors, update the bookInstance and redirect to the bookInstance
-    BookInstance.findByIdAndUpdate(bookInstanceID, bookinstance).exec((err) => {
+    BookInstance.findByIdAndUpdate(bookInstanceID, bookInstance).exec((err) => {
       if (err) return next(err); //There was an error in updating.
 
-      return res.redirect(bookinstance.url);
+      return res.redirect(bookInstance.url);
     });
   },
 ];
